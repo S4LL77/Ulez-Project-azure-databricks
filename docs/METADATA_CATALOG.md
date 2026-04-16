@@ -11,6 +11,7 @@ This document serves as the **Metadata Repository** for the London ULEZ Market I
 | **Bronze** | Raw Parquet | `data/bronze/*.parquet` | Immutable source data from AutoTrader API. |
 | **Silver** | Cleaned Table | `data/silver/fct_cars.parquet` | Validated, type-casted, and de-duplicated transactional records. |
 | **Gold** | Analytics Mart | `data/gold/mart_*.parquet` | Aggregated insights for Market Impact and Diesel Devaluation. |
+| **Diagnostics**| Audit Metadata | `data/diagnostics/quality_audit.parquet` | Historical QA results for platform stability monitoring. |
 
 ---
 

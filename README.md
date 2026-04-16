@@ -39,7 +39,15 @@ graph LR
     
     Silver -.-> QA
     Gold -.-> QA
+    QA -.->|Audit Feedback| App
 ```
+
+| Layer | Type | Physical Path | Description |
+| :--- | :--- | :--- | :--- |
+| **Bronze** | Raw Parquet | `data/bronze/*.parquet` | Immutable source data from AutoTrader API. |
+| **Silver** | Cleaned Table | `data/silver/fct_cars.parquet` | Validated, type-casted, and de-duplicated transactional records. |
+| **Gold** | Analytics Mart | `data/gold/mart_*.parquet` | Aggregated insights for Market Impact and Diesel Devaluation. |
+| **Diagnostics**| Audit Metadata | `data/diagnostics/quality_audit.parquet` | Historical QA results for platform stability monitoring. |
 
 1.  **Bronze (Raw)**: Ingests live data from the AutoTrader API via a Python collector. Data is stored in raw Parquet format with ingestion timestamps.
 2.  **Silver (Curated)**: Deduplicates data, standardizes schemas, and applies **ULEZ Compliance Logic** (Petrol >= 2006, Diesel >= 2015).

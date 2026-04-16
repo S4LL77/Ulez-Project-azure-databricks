@@ -100,6 +100,7 @@ df_impact = load_parquet_layer("data/gold/mart_market_impact.parquet")
 df_diesel = load_parquet_layer("data/gold/mart_diesel_devaluation.parquet")
 df_clusters = load_parquet_layer("data/gold/mart_market_clusters.parquet")
 df_silver = load_parquet_layer("data/silver/fct_cars.parquet")
+df_audit = load_parquet_layer("data/diagnostics/quality_audit.parquet")
 
 # Handle Empty Data
 if df_impact.empty:
@@ -116,7 +117,29 @@ avg_penalty = df_impact["percent_diff"].mean() if not df_impact.empty else 0
 
 m1.metric("Listings Processed", f"{total_listings}", "Real-time")
 m2.metric("Avg. ULEZ Impact", f"{avg_penalty:.1f}%", "Price Gap")
-m3.metric("Data Engine", "DuckDB SQL", "Parquet Format")
+
+# --- DATA INTEGRITY & TRUST SECTION ---
+if not df_audit.empty:
+    latest_audit = df_audit.sort_values("check_timestamp", ascending=False).head(4)
+    pass_rate = (latest_audit["status"] == "PASS").mean() * 100
+    m3.metric("Data Trust Score", f"{pass_rate:.0f}%", "Verified QA")
+    
+    st.markdown("### 🛡️ Data Integrity & Platform Trust")
+    with st.expander("View Latest Quality Audit Results (Operational Governance)"):
+        st.caption("Historical quality checks for regulatory compliance and platform stability.")
+        st.dataframe(
+            latest_audit.rename(columns={
+                "check_timestamp": "Timestamp",
+                "layer": "Layer",
+                "check_name": "Check Name",
+                "status": "Status",
+                "error_count": "Failures"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+else:
+    m3.metric("Data Engine", "DuckDB SQL", "Parquet Format")
 
 st.markdown("---")
 
