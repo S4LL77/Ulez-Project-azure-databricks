@@ -1,8 +1,6 @@
-# 🎯 London ULEZ Market Impact: Local Lakehouse Simulator
-
 This project is a high-performance **Local Lakehouse Analytics Pipeline** designed to track the impact of London's Ultra Low Emission Zone (ULEZ) on the used car market. 
 
-Originally designed for a **Cloud-Native Architecture (Azure Databricks + Snowflake)**, this version has been refactored into a **"Pure Lakehouse Simulator"** to allow for 100% local, cost-free execution while maintaining the integrity of the Medallion Data Architecture.
+Originally designed for a **Cloud-Native Architecture (Azure Databricks + Azure Synapse)**, this version has been refactored into a **"Pure Lakehouse Simulator"** to allow for 100% local, cost-free execution. The project focuses on the **Delivery of reliable, scalable and well-governed data pipelines** that meet business requirements in a simulated regulated environment.
 
 ---
 
@@ -58,7 +56,7 @@ graph TD
     subgraph "Cloud Architecture (Target)"
         ADLS[Azure Data Lake Gen2]
         ADB[Azure Databricks]
-        SNW[Snowflake Data Warehouse]
+        SYN[Azure Synapse Analytics]
     end
 
     subgraph "Local Simulator (Current)"
@@ -69,11 +67,11 @@ graph TD
 
     ADLS -.->|Simulated by| Folder
     ADB -.->|Simulated by| DDB
-    SNW -.->|Simulated by| PRQ
+    SYN -.->|Simulated by| PRQ
 ```
 
-- **Reasoning**: DuckDB provides the same analytical SQL power as Spark but runs as a simple Python library with **zero external dependencies** (no Java/JVM required). 
-- **Learning Outcome**: It demonstrates the ability to pivot architectures while maintaining the same logical data flow used in enterprise environments.
+- **Reasoning**: DuckDB provides the same analytical SQL power as Spark/Synapse but runs locally with **zero external dependencies**. 
+- **Business Alignment**: This simulator ensures the **availability of trusted, high-quality Gold-layer datasets** optimized for analytics consumption (simulated Power BI reporting via Streamlit).
 
 ### The "Cloud-Ready" Nature
 The logic in `databricks_pipeline.py` is written to be easily portable. If you move these files to an actual Azure Data Lake, you simply swap the local paths for `abfss://` paths, and the SQL logic remains largely the same.
@@ -90,13 +88,13 @@ The logic in `databricks_pipeline.py` is written to be easily portable. If you m
 - **Repository**: `docs/METADATA_CATALOG.md`
 - **Deliverable**: A comprehensive Data Dictionary and Semantic Model definition. Demonstrates experience in maintaining metadata repositories and documenting data lineage.
 
-### 3. Continuous Integration (CI/CD)
+### 3. Continuous Integration & Release Engineering
 - **Workflow**: `.github/workflows/data_pipeline_ci.yml`
-- **Automation**: Integrated GitHub Actions to automate linting, unit testing, and data quality stubs on every push, following enterprise release management standards.
+- **Governance**: Adheres to **data security and governance standards** by automating linting, testing, and quality stubs on every release.
 
-### 4. Structured Monitoring
+### 4. Operational Stability & Support
 - **Logs**: Centralized logging in `logs/pipeline.log`.
-- **Capability**: Real-time monitoring of data workflows, providing audit trails for ETL execution and error mitigation.
+- **Runbook**: Detailed **Operational Run Books** (`docs/OPERATIONAL_RUNBOOK.md`) for effective resolution of pipeline incidents with clear root-cause understanding.
 
 ---
 
