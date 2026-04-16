@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>London ULEZ - Architecture Diagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e1a;
+            color: #e0e6f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(14, 165, 233, 0.06) 0%, transparent 50%);
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 300;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 16px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-files {
+            list-style: none;
+        }
+
+        .card-files li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+            font-size: 0.82rem;
+        }
+
+        .card-files li:last-child {
+            border-bottom: none;
+        }
+
+        .file-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-top: 1px;
+        }
+
+        .file-name {
+            color: #cbd5e1;
+            font-family: 'Inter', monospace;
+            font-weight: 500;
+            font-size: 0.78rem;
+        }
+
+        .file-desc {
+            color: #64748b;
+            font-size: 0.72rem;
+            margin-top: 2px;
+        }
+
+        /* Card type colors */
+        .card.infra::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .card.infra .card-title { color: #a5b4fc; }
+        .card.infra .file-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+
+        .card.bronze::before { background: linear-gradient(90deg, #b45309, #d97706); }
+        .card.bronze .card-title { color: #fbbf24; }
+        .card.bronze .file-icon { background: rgba(217, 119, 6, 0.2); color: #fbbf24; }
+
+        .card.silver::before { background: linear-gradient(90deg, #64748b, #94a3b8); }
+        .card.silver .card-title { color: #cbd5e1; }
+        .card.silver .file-icon { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+        .card.gold::before { background: linear-gradient(90deg, #ca8a04, #eab308); }
+        .card.gold .card-title { color: #fde047; }
+        .card.gold .file-icon { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+
+        .card.ml::before { background: linear-gradient(90deg, #059669, #10b981); }
+        .card.ml .card-title { color: #6ee7b7; }
+        .card.ml .file-icon { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+        .card.app::before { background: linear-gradient(90deg, #dc2626, #f43f5e); }
+        .card.app .card-title { color: #fca5a5; }
+        .card.app .file-icon { background: rgba(244, 63, 94, 0.2); color: #fca5a5; }
+
+        /* Section titles */
+        .section-title {
+            text-align: center;
+            margin: 50px 0 24px;
+            position: relative;
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            height: 1px;
+            width: calc(50% - 160px);
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3));
+        }
+
+        .section-title::before { left: 0; }
+        .section-title::after { right: 0; background: linear-gradient(270deg, transparent, rgba(99, 102, 241, 0.3)); }
+
+        .section-title h2 {
+            display: inline-block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #818cf8;
+            padding: 8px 24px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Main flow grid */
+        .main-flow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Big flow connector */
+        .big-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 24px 0;
+            padding: 0 30px;
+            gap: 0;
+        }
+
+        .big-flow-segment {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .big-flow-line {
+            flex: 1;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .big-flow-arrow {
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            flex-shrink: 0;
+        }
+
+        .big-flow-label {
+            padding: 5px 14px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Concept callout */
+        .concept-box {
+            background: rgba(99, 102, 241, 0.06);
+            border: 1px dashed rgba(99, 102, 241, 0.25);
+            border-radius: 12px;
+            padding: 20px 28px;
+            margin: 12px 0;
+            text-align: center;
+        }
+
+        .concept-box h3 {
+            font-size: 0.9rem;
+            color: #a5b4fc;
+            margin-bottom: 8px;
+        }
+
+        .concept-box p {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .concept-box .highlight {
+            color: #fde047;
+            font-weight: 600;
+        }
+
+        .concept-box .dim {
+            color: #c084fc;
+            font-weight: 600;
+        }
+
+        .concept-box .fact {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .tag.dim { background: rgba(192, 132, 252, 0.2); color: #c084fc; }
+        .tag.fact { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .tag.metric { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-flow {
+                grid-template-columns: 1fr 1fr;
+            }
+            .header h1 { font-size: 1.6rem; }
+        }
+
+        @media (max-width: 600px) {
+            .main-flow {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Fade in */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚗 London ULEZ — Project Architecture</h1>
+            <p>How project folders connect and what each one contains</p>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #6366f1;"></div>
+                Infrastructure
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #d97706;"></div>
+                Bronze (Raw Data)
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #94a3b8;"></div>
+                Silver (Cleansing)
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #eab308;"></div>
+                Gold (Facts & Analytics)
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #10b981;"></div>
+                Machine Learning
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #f43f5e;"></div>
+                Frontend / Dashboard
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LAYER 1: INFRASTRUCTURE -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            <h2>⚙️ Layer 1 — Infrastructure</h2>
+        </div>
+
+        <div class="main-flow" style="grid-template-columns: 1fr 1fr;">
+            <div class="card infra">
+                <div class="card-icon">🗄️</div>
+                <div class="card-title">snowflake/setup/</div>
+                <div class="card-subtitle">Data Warehouse Configuration</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">SQL</div>
+                        <div>
+                            <div class="file-name">01_databases.sql</div>
+                            <div class="file-desc">Creates the ULEZ_DB database and BRONZE, SILVER, GOLD schemas</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">SQL</div>
+                        <div>
+                            <div class="file-name">02_warehouses.sql</div>
+                            <div class="file-desc">Creates the compute warehouse for query processing</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">SQL</div>
+                        <div>
+                            <div class="file-name">03_roles.sql</div>
+                            <div class="file-desc">Permissions and access control (RBAC)</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">SQL</div>
+                        <div>
+                            <div class="file-name">05_streaming_setup.sql</div>
+                            <div class="file-desc">Configures Streams and Tasks for pipeline automation</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card infra">
+                <div class="card-icon">📦</div>
+                <div class="card-title">dbt_project/</div>
+                <div class="card-subtitle">dbt Configuration</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">YML</div>
+                        <div>
+                            <div class="file-name">dbt_project.yml</div>
+                            <div class="file-desc">Defines the project name, version, and connection profile</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">YML</div>
+                        <div>
+                            <div class="file-name">models/staging/sources.yml</div>
+                            <div class="file-desc">Declares source tables in the BRONZE schema (audi_raw, bmw_raw, ford_raw...)</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- FLOW ARROW 1 -> 2 -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="big-flow">
+            <div class="big-flow-segment">
+                <div class="big-flow-line" style="background: linear-gradient(90deg, #6366f1, #d97706);"></div>
+                <div class="big-flow-arrow" style="border-left: 10px solid #d97706;"></div>
+            </div>
+            <div class="big-flow-label" style="background: rgba(217, 119, 6, 0.15); color: #fbbf24;">
+                Snowflake hosts tables → Python scripts ingest data
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LAYER 2: BRONZE (INGESTION) -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            <h2>🥉 Layer 2 — Bronze (Raw Data Ingestion)</h2>
+        </div>
+
+        <div class="main-flow" style="grid-template-columns: 1fr 1fr;">
+            <div class="card bronze">
+                <div class="card-icon">🔌</div>
+                <div class="card-title">scripts/</div>
+                <div class="card-subtitle">Ingestion Engine (Python)</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">autotrader_collector.py</div>
+                            <div class="file-desc">Connects to AutoTrader's GraphQL API and extracts car listings</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">data_engine.py</div>
+                            <div class="file-desc">Orchestrates the pipeline: collect → upload to Snowflake BRONZE</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">check_counts.py</div>
+                            <div class="file-desc">Validates how many rows were loaded into the warehouse</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 16px;">
+                    <p>These scripts write to the <span class="highlight">BRONZE.autotrader_raw</span> table.<br>
+                    Data arrives <strong>dirty</strong>: commas in prices, null fields, wrong types.</p>
+                </div>
+            </div>
+
+            <div class="card bronze">
+                <div class="card-icon">📂</div>
+                <div class="card-title">data/raw/</div>
+                <div class="card-subtitle">Local Raw Data (Backup / CSV)</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">CSV</div>
+                        <div>
+                            <div class="file-name">*.csv</div>
+                            <div class="file-desc">Backup CSV files with listings per brand (audi, bmw, ford...)</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 16px;">
+                    <p>Serves as a <strong>fallback</strong> in case the API is offline.<br>
+                    Also used for local testing and validation.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- FLOW ARROW 2 -> 3 -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="big-flow">
+            <div class="big-flow-segment">
+                <div class="big-flow-line" style="background: linear-gradient(90deg, #d97706, #94a3b8);"></div>
+                <div class="big-flow-arrow" style="border-left: 10px solid #94a3b8;"></div>
+            </div>
+            <div class="big-flow-label" style="background: rgba(148, 163, 184, 0.15); color: #cbd5e1;">
+                dbt run → Transforms Bronze into Silver (Cleansing & Type Casting)
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LAYER 3: SILVER (STAGING) -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            <h2>🥈 Layer 3 — Silver (Cleansing & Standardisation)</h2>
+        </div>
+
+        <div class="main-flow" style="grid-template-columns: 1fr;">
+            <div class="card silver" style="max-width: 700px; margin: 0 auto;">
+                <div class="card-icon">🧹</div>
+                <div class="card-title">dbt_project/models/staging/</div>
+                <div class="card-subtitle">Staging Layer (dbt Views)</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">SQL</div>
+                        <div>
+                            <div class="file-name">stg_cars.sql</div>
+                            <div class="file-desc">
+                                Reads from <code>BRONZE.autotrader_raw</code> and standardises all fields
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <h3>What happens here?</h3>
+                    <p>
+                        <span class="dim">brand</span> → Extracted from title using UPPER()<br>
+                        <span class="dim">price</span> → Converted from text "£12,500" to number <span class="fact">12500.00</span><br>
+                        <span class="dim">fuel_type</span> → Renamed from "fuelType" to snake_case standard<br>
+                        <span class="dim">engine_size</span> → Renamed from "engineSize"
+                    </p>
+                    <p style="margin-top: 10px; font-size: 0.78rem;">
+                        ⚡ Materialised as a <strong>VIEW</strong> — does not store data, transforms on-the-fly at query time.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- FLOW ARROW 3 -> 4 -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="big-flow">
+            <div class="big-flow-segment">
+                <div class="big-flow-line" style="background: linear-gradient(90deg, #94a3b8, #eab308);"></div>
+                <div class="big-flow-arrow" style="border-left: 10px solid #eab308;"></div>
+            </div>
+            <div class="big-flow-label" style="background: rgba(234, 179, 8, 0.15); color: #fde047;">
+                dbt run → Transforms Silver into Gold (Business Logic + Aggregation)
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LAYER 4: GOLD (MARTS) -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            <h2>🥇 Layer 4 — Gold (Facts, Dimensions & Analytics)</h2>
+        </div>
+
+        <div class="main-flow" style="grid-template-columns: 1fr 1fr;">
+            <div class="card gold">
+                <div class="card-icon">⭐</div>
+                <div class="card-title">dbt_project/models/marts/fct_cars.sql</div>
+                <div class="card-subtitle">Enriched Fact Table (Wide Table)</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">FK</div>
+                        <div>
+                            <div class="file-name">Reads from: {{ ref('stg_cars') }}</div>
+                            <div class="file-desc">References the Silver layer above</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <h3>DIMENSION Columns (Context)</h3>
+                    <p>
+                        <span class="dim">brand</span> <span class="tag dim">DIM</span> — Car manufacturer<br>
+                        <span class="dim">model</span> <span class="tag dim">DIM</span> — Car model<br>
+                        <span class="dim">fuel_type</span> <span class="tag dim">DIM</span> — Petrol / Diesel / Electric<br>
+                        <span class="dim">year</span> <span class="tag dim">DIM</span> — Year of manufacture<br>
+                        <span class="dim">transmission</span> <span class="tag dim">DIM</span> — Manual / Automatic<br>
+                        <span class="dim">is_ulez_compliant</span> <span class="tag dim">DIM</span> — ULEZ Compliant? (Business Rule)
+                    </p>
+                </div>
+                <div class="concept-box" style="margin-top: 8px;">
+                    <h3>FACT Columns (Metrics)</h3>
+                    <p>
+                        <span class="fact">price</span> <span class="tag fact">FACT</span> — Car price<br>
+                        <span class="fact">mileage</span> <span class="tag fact">FACT</span> — Odometer reading<br>
+                        <span class="fact">vehicle_age</span> <span class="tag fact">FACT</span> — Calculated age (2025 - year)<br>
+                        <span class="fact">price_per_mile</span> <span class="tag fact">FACT</span> — Value per mile driven
+                    </p>
+                </div>
+            </div>
+
+            <div class="card gold">
+                <div class="card-icon">📊</div>
+                <div class="card-title">dbt_project/models/marts/mart_ulez_impact.sql</div>
+                <div class="card-subtitle">Data Mart for Dashboard Consumption</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">FK</div>
+                        <div>
+                            <div class="file-name">Reads from: {{ ref('fct_cars') }}</div>
+                            <div class="file-desc">References the Fact Table on the left</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <h3>Grouped by DIMENSIONS:</h3>
+                    <p>
+                        GROUP BY <span class="dim">brand</span>, <span class="dim">year</span>, <span class="dim">fuel_type</span>, <span class="dim">is_ulez_compliant</span>
+                    </p>
+                </div>
+                <div class="concept-box" style="margin-top: 8px;">
+                    <h3>AGGREGATED Metrics:</h3>
+                    <p>
+                        <span class="fact">total_listings</span> <span class="tag metric">AGG</span> — COUNT(*)<br>
+                        <span class="fact">avg_price</span> <span class="tag metric">AGG</span> — AVG(price)<br>
+                        <span class="fact">avg_mileage</span> <span class="tag metric">AGG</span> — AVG(mileage)<br>
+                        <span class="fact">avg_age</span> <span class="tag metric">AGG</span> — AVG(vehicle_age)<br>
+                        <span class="fact">price_efficiency</span> <span class="tag metric">AGG</span> — price / age
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- FLOW ARROW 4 -> 5 -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="big-flow">
+            <div class="big-flow-segment" style="flex: 1;">
+                <div class="big-flow-line" style="background: linear-gradient(90deg, #eab308, #10b981);"></div>
+                <div class="big-flow-arrow" style="border-left: 10px solid #10b981;"></div>
+            </div>
+            <div class="big-flow-label" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">
+                Python reads Gold data → Trains ML models
+            </div>
+            <div class="big-flow-segment" style="flex: 1;">
+                <div class="big-flow-line" style="background: linear-gradient(90deg, #10b981, #f43f5e);"></div>
+                <div class="big-flow-arrow" style="border-left: 10px solid #f43f5e;"></div>
+            </div>
+            <div class="big-flow-label" style="background: rgba(244, 63, 94, 0.15); color: #fca5a5;">
+                Gold + ML feed the Dashboard
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LAYER 5: ML + APP -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            <h2>🧠 Layer 5 — Machine Learning & Dashboard</h2>
+        </div>
+
+        <div class="main-flow" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="card ml">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">ml_analysis/</div>
+                <div class="card-subtitle">Machine Learning Models</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">price_model.py</div>
+                            <div class="file-desc">Regression model to predict price impact based on ULEZ compliance status</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <p>Consumes <span class="fact">FACTS</span> (price, mileage) grouped by <span class="dim">DIMENSIONS</span> (fuel_type, is_ulez_compliant) to train the model.</p>
+                </div>
+            </div>
+
+            <div class="card ml">
+                <div class="card-icon">🔬</div>
+                <div class="card-title">scripts/ml_clustering.py</div>
+                <div class="card-subtitle">K-Means Clustering</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">ml_clustering.py</div>
+                            <div class="file-desc">Segments the market into clusters using Scikit-Learn and writes results back to Snowflake</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <p>Writes a new <span class="highlight">cluster_id</span> column back to the Gold layer.</p>
+                </div>
+            </div>
+
+            <div class="card app">
+                <div class="card-icon">📱</div>
+                <div class="card-title">app/</div>
+                <div class="card-subtitle">Streamlit Dashboard</div>
+                <ul class="card-files">
+                    <li>
+                        <div class="file-icon">PY</div>
+                        <div>
+                            <div class="file-name">app.py</div>
+                            <div class="file-desc">Interactive dashboard that reads directly from GOLD.mart_ulez_impact and GOLD.fct_cars to render charts</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="concept-box" style="margin-top: 12px;">
+                    <p>The dashboard uses <span class="dim">DIMENSIONS</span> as <strong>filters</strong> (brand dropdown, fuel type selector) and <span class="fact">FACTS</span> as <strong>chart values</strong> (average price bars, mileage distributions).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 60px; padding: 20px; color: #475569; font-size: 0.8rem;">
+            <p>London ULEZ Car Analysis — Interactive Architecture Diagram</p>
+        </div>
+    </div>
+</body>
+</html>

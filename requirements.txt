@@ -1,0 +1,25 @@
+# Core Data Engine
+pandas
+numpy
+pyarrow
+duckdb
+
+# Analytics & ML
+scikit-learn
+xgboost
+shap
+
+# Visualization
+streamlit
+plotly
+matplotlib
+seaborn
+
+# Utils
+python-dotenv
+watchdog
+
+# Dev & Quality Tools
+ruff
+pytest
+pytest-mock

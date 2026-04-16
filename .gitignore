@@ -1,0 +1,22 @@
+# Data - Do not upload the lakehouse layers
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Environment Variables
+.env
+
+# Spark/Delta leftovers (if any)
+_delta_log/
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,28 @@
+# dbt_project.yml for London ULEZ Car Price Impact
+
+name: 'ulez_impact'
+version: '1.0.0'
+config-version: 2
+
+# Profile matches the name in profiles.yml
+profile: 'ulez_profile'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  ulez_impact:
+    silver:
+      +schema: SILVER
+      +materialized: view
+    gold:
+      +schema: GOLD
+      +materialized: table

@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: ULEZ_DB
+    schema: BRONZE
+    tables:
+      - name: audi_raw
+      - name: bmw_raw
+      - name: ford_raw
+      - name: merc_raw
+      - name: toyota_raw
+      - name: vw_raw
+      - name: vauxhall_raw
+      - name: hyundai_raw
+      - name: skoda_raw

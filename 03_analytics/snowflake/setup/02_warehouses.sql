@@ -1,0 +1,9 @@
+-- Setup warehouse for ULEZ project
+USE ROLE SYSADMIN;
+
+CREATE WAREHOUSE IF NOT EXISTS ULEZ_WH
+  WITH WAREHOUSE_SIZE = 'XSMALL'
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE
+  INITIALLY_SUSPENDED = TRUE
+  COMMENT = 'Main compute for ULEZ analysis dbt and ML workloads';
