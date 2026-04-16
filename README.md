@@ -1,6 +1,11 @@
-This project is a high-performance **Local Lakehouse Analytics Pipeline** designed to track the impact of London's Ultra Low Emission Zone (ULEZ) on the used car market. 
+Originally designed for a **Cloud-Native Architecture (Azure Databricks + Azure Synapse)**, this version has been refactored into a **"Pure Lakehouse Simulator"**. 
 
-Originally designed for a **Cloud-Native Architecture (Azure Databricks + Azure Synapse)**, this version has been refactored into a **"Pure Lakehouse Simulator"** to allow for 100% local, cost-free execution. The project focuses on the **Delivery of reliable, scalable and well-governed data pipelines** that meet business requirements in a simulated regulated environment.
+In line with the **Azure Synapse Analytics** philosophy, this project unifies three critical domains in a single local environment:
+- 🏛️ **Enterprise Data Warehousing**: High-performance SQL analytics via DuckDB.
+- 🚀 **Big Data Analytics**: Spark-like processing logic using Python and Parquet.
+- ⚡ **Data Integration (ETL/ELT)**: Automated pipelines across Medallion layers.
+
+The result is a unified platform that accelerates time-to-insight using SQL and Python, maintaining the same standards of **reliability, scalability, and governance** found in regulated cloud environments.
 
 ---
 
