@@ -9,6 +9,38 @@ Originally designed for a **Cloud-Native Architecture (Azure Databricks + Snowfl
 ## 🏗️ Architecture: The Medallion Model
 The project follows the industry-standard Medallion Architecture using **Parquet** files and **DuckDB** for lightning-fast SQL processing:
 
+```mermaid
+graph LR
+    subgraph "External Source"
+        API[AutoTrader API]
+    end
+
+    subgraph "Local Lakehouse (Medallion)"
+        Bronze[(Bronze Layer<br/>Raw Parquet)]
+        Silver[(Silver Layer<br/>Cleaned Delta/Parquet)]
+        Gold[(Gold Layer<br/>Analytics Marts)]
+    end
+
+    subgraph "Serving & Intelligence"
+        ML[ML Clustering<br/>K-Means]
+        App[Streamlit<br/>Dashboard]
+    end
+
+    subgraph "Data Quality & Governance"
+        QA{Quality Checks<br/>DuckDB}
+    end
+
+    API --> Bronze
+    Bronze --> Silver
+    Silver --> Gold
+    Silver --> ML
+    ML --> Gold
+    Gold --> App
+    
+    Silver -.-> QA
+    Gold -.-> QA
+```
+
 1.  **Bronze (Raw)**: Ingests live data from the AutoTrader API via a Python collector. Data is stored in raw Parquet format with ingestion timestamps.
 2.  **Silver (Curated)**: Deduplicates data, standardizes schemas, and applies **ULEZ Compliance Logic** (Petrol >= 2006, Diesel >= 2015).
 3.  **Gold (Aggregated)**: Business-level marts including "Market Impact Index" and "Diesel Devaluation Rankings".
@@ -20,6 +52,26 @@ The project follows the industry-standard Medallion Architecture using **Parquet
 
 ### Why DuckDB instead of Spark?
 While the original project utilized PySpark for Databricks, this simulator uses **DuckDB**. 
+
+```mermaid
+graph TD
+    subgraph "Cloud Architecture (Target)"
+        ADLS[Azure Data Lake Gen2]
+        ADB[Azure Databricks]
+        SNW[Snowflake Data Warehouse]
+    end
+
+    subgraph "Local Simulator (Current)"
+        Folder[Local /data/ Directory]
+        DDB[DuckDB Engine]
+        PRQ[Local Parquet Serving]
+    end
+
+    ADLS -.->|Simulated by| Folder
+    ADB -.->|Simulated by| DDB
+    SNW -.->|Simulated by| PRQ
+```
+
 - **Reasoning**: DuckDB provides the same analytical SQL power as Spark but runs as a simple Python library with **zero external dependencies** (no Java/JVM required). 
 - **Learning Outcome**: It demonstrates the ability to pivot architectures while maintaining the same logical data flow used in enterprise environments.
 
