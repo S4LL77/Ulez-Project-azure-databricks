@@ -26,6 +26,28 @@ While the original project utilized PySpark for Databricks, this simulator uses 
 ### The "Cloud-Ready" Nature
 The logic in `databricks_pipeline.py` is written to be easily portable. If you move these files to an actual Azure Data Lake, you simply swap the local paths for `abfss://` paths, and the SQL logic remains largely the same.
 
+---
+
+## 🛡️ Enterprise-Grade Features
+
+### 1. Automated Quality Assurance (QA)
+- **Script**: `05_quality/quality_checks.py`
+- **Logic**: Implements automated data validation using DuckDB. It checks for Primary Key integrity, price consistency, and validates business logic (ULEZ compliance rules) before data reaches the Gold layer.
+
+### 2. Data Governance & Metadata
+- **Repository**: `docs/METADATA_CATALOG.md`
+- **Deliverable**: A comprehensive Data Dictionary and Semantic Model definition. Demonstrates experience in maintaining metadata repositories and documenting data lineage.
+
+### 3. Continuous Integration (CI/CD)
+- **Workflow**: `.github/workflows/data_pipeline_ci.yml`
+- **Automation**: Integrated GitHub Actions to automate linting, unit testing, and data quality stubs on every push, following enterprise release management standards.
+
+### 4. Structured Monitoring
+- **Logs**: Centralized logging in `logs/pipeline.log`.
+- **Capability**: Real-time monitoring of data workflows, providing audit trails for ETL execution and error mitigation.
+
+---
+
 ### Limitations
 - **Volume**: Being a local simulator, it is designed for thousands of records rather than petabytes.
 - **Hardware**: Reliability depends on local SSD performance rather than cloud-managed clusters.
@@ -46,7 +68,8 @@ Follow the pipeline order:
 1.  **Ingestion**: `python 01_ingestion/data_engine.py` (Gathering API data)
 2.  **Processing**: `python 02_processing/databricks_pipeline.py` (Building the Lakehouse)
 3.  **Intelligence**: `python 02_processing/ml_clustering.py` (Market Segmentation)
-4.  **Dashboard**: `streamlit run 04_visualization/app/app.py`
+4.  **Quality Check**: `python 05_quality/quality_checks.py` (Automated QA)
+5.  **Dashboard**: `streamlit run 04_visualization/app/app.py`
 
 ---
 
