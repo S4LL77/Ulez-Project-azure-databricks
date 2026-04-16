@@ -13,15 +13,16 @@ graph LR
         API[AutoTrader API]
     end
 
-    subgraph "Local Lakehouse (Medallion)"
+    subgraph "Local Lakehouse (Simulated Medallion)"
         Bronze[(Bronze Layer<br/>Raw Parquet)]
         Silver[(Silver Layer<br/>Cleaned Delta/Parquet)]
         Gold[(Gold Layer<br/>Analytics Marts)]
     end
 
-    subgraph "Serving & Intelligence"
+    subgraph "Serving & Intelligence (Simulated Synapse)"
         ML[ML Clustering<br/>K-Means]
-        App[Streamlit<br/>Dashboard]
+        Synapse[Azure Synapse<br/>Analytics Layer]
+        App[Streamlit / Power BI<br/>Reporting Hub]
     end
 
     subgraph "Data Quality & Governance"
@@ -33,7 +34,8 @@ graph LR
     Silver --> Gold
     Silver --> ML
     ML --> Gold
-    Gold --> App
+    Gold --> Synapse
+    Synapse --> App
     
     Silver -.-> QA
     Gold -.-> QA
