@@ -7,8 +7,23 @@ Environment: Local Python (No Java required).
 """
 
 import os
+import logging
 from pathlib import Path
+from datetime import datetime
 import duckdb
+
+# --- STRUCTURED LOGGING CONFIGURATION ---
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - PI PELINE - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_DIR / "pipeline.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("MedallionProcessor")
 
 def run_medallion_pipeline():
     # Paths
@@ -49,6 +64,7 @@ def run_medallion_pipeline():
     query = f"""
         CREATE OR REPLACE TABLE silver_cars AS
         SELECT 
+            id,
             _tmp_brand as brand,
             _tmp_model as model,
             year,
@@ -123,6 +139,13 @@ def run_medallion_pipeline():
     con.execute(f"COPY gold_diesel TO '{gold_diesel_path}' (FORMAT PARQUET)")
 
     print("\nSUCCESS: Medallion Pipeline complete (Local DuckDB).")
+    logger.info("Pipeline successful. Final Gold tables verified locally.")
 
 if __name__ == "__main__":
-    run_medallion_pipeline()
+    logger.info("--- Data Pipeline Execution Started ---")
+    try:
+        run_medallion_pipeline()
+    except Exception as e:
+        logger.critical(f"Pipeline crashed with unhandled exception: {e}")
+        raise
+    logger.info("--- Data Pipeline Execution Finished ---")
