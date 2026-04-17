@@ -3,6 +3,7 @@ pandas
 numpy
 pyarrow
 duckdb
+requests
 
 # Analytics & ML
 scikit-learn

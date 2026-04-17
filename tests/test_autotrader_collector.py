@@ -1,4 +1,10 @@
-from scripts.autotrader_collector import fetch_autotrader_listings
+import sys
+from pathlib import Path
+
+# Add the ingestion directory to the Python path for test imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "01_ingestion"))
+
+from autotrader_collector import fetch_autotrader_listings
 
 
 def test_fetch_autotrader_listings_success(mocker):

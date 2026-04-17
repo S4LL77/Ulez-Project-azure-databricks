@@ -4,3 +4,15 @@
 2026-04-16 05:10:17,347 - PI PELINE - INFO - --- Data Pipeline Execution Started ---
 2026-04-16 05:10:17,406 - PI PELINE - INFO - Pipeline successful. Final Gold tables verified locally.
 2026-04-16 05:10:17,410 - PI PELINE - INFO - --- Data Pipeline Execution Finished ---
+2026-04-17 18:38:41,268 - PIPELINE - INFO - --- Data Pipeline Execution Started ---
+2026-04-17 18:38:41,269 - PIPELINE - INFO - Starting Local Lakehouse Pipeline (DuckDB)...
+2026-04-17 18:38:41,289 - PIPELINE - INFO - 1. Processing Bronze to Silver...
+2026-04-17 18:38:41,357 - PIPELINE - INFO - Schema detected — brand: True, model: False
+2026-04-17 18:38:41,430 - PIPELINE - INFO - Silver layer: 160 records after deduplication.
+2026-04-17 18:38:41,441 - PIPELINE - INFO - Silver layer saved to data\silver\fct_cars.parquet
+2026-04-17 18:38:41,441 - PIPELINE - INFO - 2. Processing Silver to Gold (Market Impact)...
+2026-04-17 18:38:41,452 - PIPELINE - INFO - Gold (Market Impact): 4 brand aggregations.
+2026-04-17 18:38:41,458 - PIPELINE - INFO - 3. Processing Silver to Gold (Diesel Devaluation)...
+2026-04-17 18:38:41,475 - PIPELINE - INFO - Gold (Diesel Devaluation): 8 model rankings.
+2026-04-17 18:38:41,480 - PIPELINE - INFO - Medallion Pipeline complete. All layers verified.
+2026-04-17 18:38:41,485 - PIPELINE - INFO - --- Data Pipeline Execution Finished ---

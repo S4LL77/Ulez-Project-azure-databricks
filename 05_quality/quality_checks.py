@@ -126,8 +126,3 @@ if __name__ == "__main__":
     success = run_quality_checks()
     if not success:
         sys.exit(1)
-
-if __name__ == "__main__":
-    success = run_quality_checks()
-    if not success:
-        sys.exit(1)

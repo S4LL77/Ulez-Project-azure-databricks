@@ -138,7 +138,7 @@ def fetch_autotrader_listings(
                 if engine_match:
                     engine_size = float(engine_match.group(1))
 
-                listings.append(
+                listings.append({
                         "id": l.get("advertId"),
                         "title": l.get("title"),
                         "brand": ctx.get("make"),

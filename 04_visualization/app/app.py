@@ -135,7 +135,7 @@ if not df_audit.empty:
                 "status": "Status",
                 "error_count": "Failures"
             }),
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 else:
@@ -171,7 +171,7 @@ with col1:
         color_discrete_map={"Compliant Price": "#00CC96", "Non-Compliant Price": "#EF553B"},
         template="plotly_white"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 with col2:
     st.subheader("Market Impact Index by Brand")
@@ -181,7 +181,7 @@ with col2:
         .sort_values("Disvaluation %")
         .style.background_gradient(subset=["Disvaluation %"], cmap="Reds"),
         hide_index=True,
-        use_container_width=True
+        width='stretch'
     )
 
 st.markdown("---")
@@ -203,7 +203,7 @@ if not df_diesel.empty:
         df_diesel_refined.style.background_gradient(
             subset=["Devaluation (%)"], cmap="Reds"
         ).format({"Compliant Avg Price": "£{:,.0f}", "Non-Compliant Avg Price": "£{:,.0f}", "Devaluation (%)": "{:.1f}%"}),
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
     )
     st.divider()
@@ -225,7 +225,7 @@ if not df_clusters.empty:
             color_discrete_sequence=px.colors.qualitative.Set2,
             template="plotly_white"
         )
-        st.plotly_chart(fig_cluster, use_container_width=True)
+        st.plotly_chart(fig_cluster, width='stretch')
 
     with cl2:
         st.subheader("Cluster Distribution")
@@ -243,7 +243,7 @@ if not df_silver.empty:
         df_silver[["brand", "model", "year", "price", "fuel_type", "is_ulez_compliant"]]
         .sort_values("price", ascending=False)
         .head(20),
-        use_container_width=True,
+        width='stretch',
         hide_index=True
     )
 else:

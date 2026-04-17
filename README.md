@@ -1,16 +1,22 @@
-Originally designed for a **Cloud-Native Architecture (Azure Databricks + Azure Synapse)**, this version has been refactored into a **"Pure Lakehouse Simulator"**. 
+# ULEZ Market Analytics — Local Lakehouse
 
-In line with the **Azure Synapse Analytics** philosophy, this project unifies three critical domains in a single local environment:
-- 🏛️ **Enterprise Data Warehousing**: High-performance SQL analytics via DuckDB.
-- 🚀 **Big Data Analytics**: Spark-like processing logic using Python and Parquet.
-- ⚡ **Data Integration (ETL/ELT)**: Automated pipelines across Medallion layers.
+A local Lakehouse pipeline that analyses the UK **ULEZ (Ultra Low Emission Zone)** policy's impact on second-hand car prices, using live data from the AutoTrader API.
 
-The result is a unified platform that accelerates time-to-insight using SQL and Python, maintaining the same standards of **reliability, scalability, and governance** found in regulated cloud environments.
+Built using the **Medallion Architecture** (Bronze → Silver → Gold) with **DuckDB** for analytical SQL processing and **Parquet** for storage. The pipeline logic is written to be cloud-portable — swap local file paths for `abfss://` URIs and it runs on Azure Databricks/Spark with minimal changes.
 
 ---
 
-## 🏗️ Architecture: The Medallion Model
-The project follows the industry-standard Medallion Architecture using **Parquet** files and **DuckDB** for lightning-fast SQL processing:
+## 📊 Dashboard Preview
+
+![Dashboard Overview — Metrics and Price Gap Analysis](docs/images/dashboard_overview.png)
+
+![Market Impact Charts and ML Clustering](docs/images/dashboard_charts.png)
+
+![ML Market Segmentation (K-Means)](docs/images/dashboard_ml.png)
+
+---
+
+## 🏗️ Architecture: Medallion Model
 
 ```mermaid
 graph LR
@@ -18,20 +24,19 @@ graph LR
         API[AutoTrader API]
     end
 
-    subgraph "Local Lakehouse (Simulated Medallion)"
+    subgraph "Local Lakehouse (Medallion Architecture)"
         Bronze[(Bronze Layer<br/>Raw Parquet)]
-        Silver[(Silver Layer<br/>Cleaned Delta/Parquet)]
+        Silver[(Silver Layer<br/>Cleaned Parquet)]
         Gold[(Gold Layer<br/>Analytics Marts)]
     end
 
-    subgraph "Serving & Intelligence (Simulated Synapse)"
+    subgraph "Intelligence & Serving"
         ML[ML Clustering<br/>K-Means]
-        Synapse[Azure Synapse<br/>Analytics Layer]
-        App[Streamlit / Power BI<br/>Reporting Hub]
+        App[Streamlit Dashboard]
     end
 
-    subgraph "Data Quality & Governance"
-        QA{Quality Checks<br/>DuckDB}
+    subgraph "Data Quality"
+        QA{Automated QA<br/>DuckDB}
     end
 
     API --> Bronze
@@ -39,84 +44,93 @@ graph LR
     Silver --> Gold
     Silver --> ML
     ML --> Gold
-    Gold --> Synapse
-    Synapse --> App
+    Gold --> App
     
     Silver -.-> QA
     Gold -.-> QA
     QA -.->|Audit Feedback| App
 ```
 
-| Layer | Type | Physical Path | Description |
-| :--- | :--- | :--- | :--- |
-| **Bronze** | Raw Parquet | `data/bronze/*.parquet` | Immutable source data from AutoTrader API. |
-| **Silver** | Cleaned Table | `data/silver/fct_cars.parquet` | Validated, type-casted, and de-duplicated transactional records. |
-| **Gold** | Analytics Mart | `data/gold/mart_*.parquet` | Aggregated insights for Market Impact and Diesel Devaluation. |
-| **Diagnostics**| Audit Metadata | `data/diagnostics/quality_audit.parquet` | Historical QA results for platform stability monitoring. |
+| Layer | Physical Path | Description |
+| :--- | :--- | :--- |
+| **Bronze** | `data/bronze/*.parquet` | Immutable source data from AutoTrader API with ingestion timestamps. |
+| **Silver** | `data/silver/fct_cars.parquet` | Validated, type-casted, and de-duplicated records with ULEZ compliance flags. |
+| **Gold** | `data/gold/mart_*.parquet` | Aggregated analytics marts: Market Impact, Diesel Devaluation, ML Clusters. |
+| **Diagnostics** | `data/diagnostics/quality_audit.parquet` | Historical QA audit results (last 100 runs). |
 
-1.  **Bronze (Raw)**: Ingests live data from the AutoTrader API via a Python collector. Data is stored in raw Parquet format with ingestion timestamps.
-2.  **Silver (Curated)**: Deduplicates data, standardizes schemas, and applies **ULEZ Compliance Logic** (Petrol >= 2006, Diesel >= 2015).
-3.  **Gold (Aggregated)**: Business-level marts including "Market Impact Index" and "Diesel Devaluation Rankings".
-4.  **Intelligence**: A K-Means Clustering model (Scikit-Learn) that segments the market into Premium, Standard, and Budget profiles.
+### Pipeline Stages
+1. **Bronze (Raw)**: Ingests live data from the AutoTrader API. Data is stored in raw Parquet with ingestion timestamps.
+2. **Silver (Curated)**: Deduplicates records, standardises schemas, and applies ULEZ Compliance Logic (Petrol ≥ 2006, Diesel ≥ 2015).
+3. **Gold (Aggregated)**: Business-level marts including Market Impact Index and Diesel Devaluation Rankings.
+4. **ML Segmentation**: K-Means clustering with automated K selection via silhouette scoring to segment the market into profiles.
 
 ---
 
-## 🛠️ Simulation Logic & Strategic Decisions
+## 🛠️ Design Decisions
 
-### Why DuckDB instead of Spark?
-While the original project utilized PySpark for Databricks, this simulator uses **DuckDB**. 
+### Why DuckDB Instead of Spark?
 
 ```mermaid
 graph TD
-    subgraph "Cloud Architecture (Target)"
+    subgraph "Cloud Target"
         ADLS[Azure Data Lake Gen2]
-        ADB[Azure Databricks]
-        SYN[Azure Synapse Analytics]
+        ADB[Azure Databricks / Spark]
     end
 
-    subgraph "Local Simulator (Current)"
+    subgraph "Local Simulator"
         Folder[Local /data/ Directory]
         DDB[DuckDB Engine]
-        PRQ[Local Parquet Serving]
     end
 
     ADLS -.->|Simulated by| Folder
     ADB -.->|Simulated by| DDB
-    SYN -.->|Simulated by| PRQ
 ```
 
-- **Reasoning**: DuckDB provides the same analytical SQL power as Spark/Synapse but runs locally with **zero external dependencies**. 
-- **Business Alignment**: This simulator ensures the **availability of trusted, high-quality Gold-layer datasets** optimized for analytics consumption (simulated Power BI reporting via Streamlit).
+DuckDB provides analytical SQL parity with Spark/Synapse but runs locally with zero infrastructure cost. The SQL in `databricks_pipeline.py` is written to be portable — replacing local paths with `abfss://` URIs is the primary change needed for cloud deployment.
 
-### The "Cloud-Ready" Nature
-The logic in `databricks_pipeline.py` is written to be easily portable. If you move these files to an actual Azure Data Lake, you simply swap the local paths for `abfss://` paths, and the SQL logic remains largely the same.
+### Cloud Portability
+The Medallion layer logic (Bronze → Silver → Gold) is engine-agnostic by design:
+- **SQL transformations** use standard ANSI SQL compatible with both DuckDB and Spark SQL.
+- **Parquet storage** is the same format used by Azure Data Lake, Delta Lake, and most cloud data platforms.
+- **ULEZ business rules** are applied in the Silver layer where they belong in any lakehouse architecture.
 
 ---
 
-## 🛡️ Enterprise-Grade Features
+## 🛡️ Operational Features
 
-### 1. Automated Quality Assurance (QA)
+### Automated Quality Assurance
 - **Script**: `05_quality/quality_checks.py`
-- **Logic**: Implements automated data validation using DuckDB. It checks for Primary Key integrity, price consistency, and validates business logic (ULEZ compliance rules) before data reaches the Gold layer.
+- **Checks**: Primary Key integrity, price accuracy, ULEZ compliance logic validation, Gold metrics completeness.
+- **Audit Trail**: Results persisted to `data/diagnostics/quality_audit.parquet`.
 
-### 2. Data Governance & Metadata
-- **Repository**: `docs/METADATA_CATALOG.md`
-- **Deliverable**: A comprehensive Data Dictionary and Semantic Model definition. Demonstrates experience in maintaining metadata repositories and documenting data lineage.
+### Data Governance & Metadata
+- **Data Dictionary**: `docs/METADATA_CATALOG.md` — column definitions, semantic rules, and data types for every layer.
+- **Data Lineage**: `docs/DATA_LINEAGE.md` — end-to-end data flow documentation.
 
-### 3. Continuous Integration & Release Engineering
+### CI/CD
 - **Workflow**: `.github/workflows/data_pipeline_ci.yml`
-- **Governance**: Adheres to **data security and governance standards** by automating linting, testing, and quality stubs on every release.
+- **Pipeline**: Linting (ruff) → Unit tests (pytest) → Quality gate on every push to `main`.
 
-### 4. Operational Stability & Support
-- **Logs**: Centralized logging in `logs/pipeline.log`.
-- **Runbook**: Detailed **Operational Run Books** (`docs/OPERATIONAL_RUNBOOK.md`) for effective resolution of pipeline incidents with clear root-cause understanding.
+### Logging & Monitoring
+- **Centralized logs**: `logs/pipeline.log` with structured timestamps and severity levels.
+- **Row-count guardrails**: Pipeline aborts if Silver layer produces zero rows (prevents empty Gold marts).
+- **Operational Runbook**: `docs/OPERATIONAL_RUNBOOK.md` — incident response procedures and release checklist.
 
 ---
 
-### Limitations
-- **Volume**: Being a local simulator, it is designed for thousands of records rather than petabytes.
-- **Hardware**: Reliability depends on local SSD performance rather than cloud-managed clusters.
-- **Connectivity**: This version eliminates Snowflake to avoid cloud costs, using Local Parquet as the final "Serving Layer" for the Streamlit Dashboard.
+## 📋 Known Limitations & Production Roadmap
+
+### Current Limitations
+- **Full refresh only** — no incremental load or CDC strategy. Each run reprocesses all Bronze data.
+- **Local scale** — designed for thousands of records, not petabyte workloads.
+- **Single-threaded** — brands are processed sequentially, not in parallel.
+
+### Production Migration Path
+1. Replace local `data/` paths with `abfss://` Azure Data Lake Gen2 URIs.
+2. Swap DuckDB for Spark SQL on Databricks — SQL logic is compatible.
+3. Add incremental loads using `ingestion_timestamp` as a watermark column.
+4. Implement secret management via Azure Key Vault.
+5. Schedule via Databricks Workflows or Apache Airflow.
 
 ---
 
@@ -129,20 +143,39 @@ pip install -r requirements.txt
 ```
 
 ### 2. Execution Sequence
-Follow the pipeline order:
-1.  **Ingestion**: `python 01_ingestion/data_engine.py` (Gathering API data)
-2.  **Processing**: `python 02_processing/databricks_pipeline.py` (Building the Lakehouse)
-3.  **Intelligence**: `python 02_processing/ml_clustering.py` (Market Segmentation)
-4.  **Quality Check**: `python 05_quality/quality_checks.py` (Automated QA)
-5.  **Dashboard**: `streamlit run 04_visualization/app/app.py`
+```bash
+# 1. Ingest live data from AutoTrader API
+python 01_ingestion/data_engine.py
+
+# 2. Build the Lakehouse (Bronze → Silver → Gold)
+python 02_processing/databricks_pipeline.py
+
+# 3. Run ML market segmentation
+python 02_processing/ml_clustering.py
+
+# 4. Validate data quality
+python 05_quality/quality_checks.py
+
+# 5. Launch the dashboard
+streamlit run 04_visualization/app/app.py
+```
 
 ---
 
-## 📊 Dashboard Preview
-The dashboard provides a **Premium Light Mode** interface featuring:
-- Live Price Gap analysis between compliant and non-compliant vehicles.
-- Top 10 Diesel Devaluation ranking.
-- Interactive ML Market Clusters (Price vs Mileage).
-
----
-*Created as an advanced simulation for Data Engineering and Market Analytics.*
+## 📂 Project Structure
+```
+├── 01_ingestion/          # API data collection
+│   ├── autotrader_collector.py
+│   └── data_engine.py
+├── 02_processing/         # Medallion pipeline + ML
+│   ├── databricks_pipeline.py
+│   └── ml_clustering.py
+├── 04_visualization/      # Streamlit dashboard
+│   └── app/app.py
+├── 05_quality/            # Automated QA suite
+│   └── quality_checks.py
+├── tests/                 # Unit tests
+├── docs/                  # Metadata catalog, lineage, runbook
+├── .github/workflows/     # CI/CD pipelines
+└── logs/                  # Pipeline execution logs
+```

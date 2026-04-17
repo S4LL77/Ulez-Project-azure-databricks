@@ -17,7 +17,7 @@ LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - PI PELINE - %(levelname)s - %(message)s",
+    format="%(asctime)s - PIPELINE - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler(LOG_DIR / "pipeline.log"),
         logging.StreamHandler()
@@ -36,16 +36,16 @@ def run_medallion_pipeline():
     silver_path.parent.mkdir(parents=True, exist_ok=True)
     gold_impact_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print(">>> Starting Local Lakehouse Pipeline (DuckDB)...")
+    logger.info("Starting Local Lakehouse Pipeline (DuckDB)...")
     
     # Initialize DuckDB connection
     con = duckdb.connect()
 
     # --- 1. BRONZE -> SILVER ---
-    print(">>> 1. Processing Bronze to Silver...")
+    logger.info("1. Processing Bronze to Silver...")
     if not any(Path("data/bronze").glob("*.parquet")):
-        print("ERROR: No bronze parquet files found. Run ingestion first.")
-        return
+        logger.error("No bronze parquet files found. Run ingestion first.")
+        raise FileNotFoundError("Bronze layer is empty — run 01_ingestion/data_engine.py first.")
 
     # STEP A: Dynamic Column Detection
     # This ensures the pipeline works even if columns are missing from ALL parquet files
@@ -57,10 +57,9 @@ def run_medallion_pipeline():
     model_col = "model" if "model" in current_cols else "NULL"
     title_col = "title" if "title" in current_cols else "NULL"
     
-    print(f"DEBUG: Schema detected. Brand exists: {'brand' in current_cols}, Model exists: {'model' in current_cols}")
+    logger.info(f"Schema detected — brand: {'brand' in current_cols}, model: {'model' in current_cols}")
 
     # STEP B: Transform and Clean with Dynamic SQL
-    # We use temporary names locally and cast them to the final model
     query = f"""
         CREATE OR REPLACE TABLE silver_cars AS
         SELECT 
@@ -99,12 +98,18 @@ def run_medallion_pipeline():
     """
     con.execute(query)
 
+    # --- GUARDRAIL: Validate Silver output before proceeding ---
+    silver_count = con.execute("SELECT COUNT(*) FROM silver_cars").fetchone()[0]
+    if silver_count == 0:
+        raise ValueError("Silver layer produced 0 rows — aborting pipeline. Check Bronze data quality.")
+    logger.info(f"Silver layer: {silver_count} records after deduplication.")
+
     # Save Silver
     con.execute(f"COPY silver_cars TO '{silver_path}' (FORMAT PARQUET)")
-    print(f"SUCCESS: Silver layer saved to {silver_path}")
+    logger.info(f"Silver layer saved to {silver_path}")
 
     # --- 2. SILVER -> GOLD (Market Impact) ---
-    print(">>> 2. Processing Silver to Gold (Impact)...")
+    logger.info("2. Processing Silver to Gold (Market Impact)...")
     con.execute(f"""
         CREATE OR REPLACE TABLE gold_impact AS
         SELECT 
@@ -116,10 +121,13 @@ def run_medallion_pipeline():
         FROM silver_cars
         GROUP BY brand
     """)
+
+    gold_impact_count = con.execute("SELECT COUNT(*) FROM gold_impact").fetchone()[0]
+    logger.info(f"Gold (Market Impact): {gold_impact_count} brand aggregations.")
     con.execute(f"COPY gold_impact TO '{gold_impact_path}' (FORMAT PARQUET)")
 
     # --- 3. SILVER -> GOLD (Diesel Devaluation) ---
-    print(">>> 3. Processing Silver to Gold (Diesel)...")
+    logger.info("3. Processing Silver to Gold (Diesel Devaluation)...")
     con.execute(f"""
         CREATE OR REPLACE TABLE gold_diesel AS
         SELECT 
@@ -136,10 +144,12 @@ def run_medallion_pipeline():
         ORDER BY devaluation_percent DESC
         LIMIT 10
     """)
+
+    gold_diesel_count = con.execute("SELECT COUNT(*) FROM gold_diesel").fetchone()[0]
+    logger.info(f"Gold (Diesel Devaluation): {gold_diesel_count} model rankings.")
     con.execute(f"COPY gold_diesel TO '{gold_diesel_path}' (FORMAT PARQUET)")
 
-    print("\nSUCCESS: Medallion Pipeline complete (Local DuckDB).")
-    logger.info("Pipeline successful. Final Gold tables verified locally.")
+    logger.info("Medallion Pipeline complete. All layers verified.")
 
 if __name__ == "__main__":
     logger.info("--- Data Pipeline Execution Started ---")

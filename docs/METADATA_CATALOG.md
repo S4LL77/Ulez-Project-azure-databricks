@@ -21,34 +21,62 @@ This is the primary fact table used for analytics and clustering.
 
 | Column | Data Type | Semantic Meaning | Business Rules / Quality Checks |
 | :--- | :--- | :--- | :--- |
-| `id` | STRING | Unique Advert ID | **Primary Key**: Must be unique (checked in Silver). |
-| `brand` | STRING | Vehicle Manufacturer | Standardized to UPPERCASE. |
-| `model` | STRING | Vehicle Model | Fallback to `title` if NULL in source. |
-| `year` | INTEGER | Manufacturing Year | Must be >= 1900. |
-| `price` | DECIMAL | Listing Price (£) | Must be > 0. Validated via `CAST`. |
-| `fuel_type` | STRING | Petrol, Diesel, Hybrid, EV | Standardized to lowercase. |
+| `id` | STRING | Unique Advert ID | **Primary Key**: Must be unique (validated in QA suite). |
+| `brand` | STRING | Vehicle Manufacturer | Fallback to 'UNKNOWN' if missing in source. |
+| `model` | STRING | Vehicle Model | Fallback to `title` → 'UNKNOWN' if NULL in source. |
+| `year` | INTEGER | Manufacturing Year | Used for ULEZ compliance derivation. |
+| `price` | DECIMAL | Listing Price (£) | Must be > 0 (validated in QA suite). |
+| `mileage` | INTEGER | Odometer Reading | Extracted from API badge data. |
+| `fuel_type` | STRING | Petrol, Diesel, Hybrid, EV | Standardized to lowercase via `lower(trim())`. |
+| `engine_size` | FLOAT | Engine displacement (litres) | Extracted via regex from subtitle text. |
+| `transmission` | STRING | Manual / Automatic | Heuristic detection from subtitle/grabber text. |
 | `is_ulez_compliant` | BOOLEAN | ULEZ Status | Derived column based on Fuel Type and Year. |
 | `processed_at` | TIMESTAMP | Processing Date | Audit timestamp for lineage tracking. |
 
-### 🚦 Semantic Rules for `is_ulez_compliant`
-- **Petrol**: Compliant if `year >= 2006` (Euro 4).
-- **Diesel**: Compliant if `year >= 2015` (Euro 6).
-- **Alternative (Hybrid/EV)**: Default to Compliant (subject to further verification).
+### 🚦 ULEZ Compliance Rules
+- **Petrol**: Compliant if `year >= 2006` (Euro 4 standard).
+- **Diesel**: Compliant if `year >= 2015` (Euro 6 standard).
+- **All Others**: Default to non-compliant (conservative approach).
 
 ---
 
-## 🛡️ Data Governance & Security Standards
+## 📊 Gold Layer: Analytics Marts
 
-### Access Control & Security
-- **Regulated Environment**: This project simulates compliance within a highly regulated environment. 
-- **Data Protection**: Implementation of `.gitignore` and `.env` prevents leak of connection strings or raw staging data.
-- **Access Management**: Read-only access for analytical researchers; Read/Write access restricted to the Data Engineering automated service principal.
+### `mart_market_impact.parquet`
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `brand` | STRING | Vehicle manufacturer |
+| `avg_price_compliant` | DECIMAL | Average price of ULEZ-compliant vehicles |
+| `avg_price_non_compliant` | DECIMAL | Average price of non-compliant vehicles |
+| `percent_diff` | DECIMAL | Price gap percentage between compliant and non-compliant |
 
-### Semantic Layer (Power BI Optimization)
-To ensure the **availability of trusted, high-quality Gold-layer datasets**, the following semantic optimizations are applied:
-- **Star Schema Ready**: Gold marts are designed as flat tables to minimize join complexity in Power BI.
-- **Pre-aggregated Metrics**: Key business KPIs (Percent Difference, Average Price) are pre-calculated to reduce DAX overhead.
-- **Data Profiling**: Regular profiling is conducted using `05_quality/quality_checks.py`.
+### `mart_diesel_devaluation.parquet`
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `brand` | STRING | Vehicle manufacturer |
+| `model` | STRING | Vehicle model |
+| `avg_price_compliant` | DECIMAL | Average compliant diesel price |
+| `avg_price_non_compliant` | DECIMAL | Average non-compliant diesel price |
+| `devaluation_percent` | DECIMAL | Percentage devaluation due to ULEZ non-compliance |
+
+### `mart_market_clusters.parquet`
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `CLUSTER_ID` | INTEGER | K-Means assigned cluster ID |
+| `CLUSTER_NAME` | STRING | Business label (e.g., "Premium Segment (Compliant)") |
+| All Silver columns | — | Inherited from `fct_cars` |
 
 ---
-*Maintained by the Data Platform Engineering Team. For use in Azure Synapse & Power BI.*
+
+## 🛡️ Data Governance
+
+### Access Control
+- **Credential Management**: `.env` file excluded from version control via `.gitignore`.
+- **Data Exclusion**: `data/` directory excluded from git to prevent raw data exposure.
+- **Read-only Consumers**: The Streamlit dashboard reads Gold layer via Parquet — no write access.
+
+### Semantic Layer
+Gold marts are designed as flat, pre-aggregated tables to minimize downstream processing:
+- **Star Schema Ready**: Flat tables minimize join complexity for BI tools.
+- **Pre-aggregated KPIs**: Key metrics (percent_diff, devaluation_percent) are pre-calculated.
+- **Profiled**: Regular QA checks via `05_quality/quality_checks.py`.
